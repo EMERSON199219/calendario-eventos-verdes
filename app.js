@@ -64,15 +64,26 @@ function updateUrlWithEvents(events) {
   window.history.replaceState({}, '', newUrl);
 }
 
+function pruneDemoEvents(events) {
+  const demoTitles = ['Revisión de agenda', 'Campaña comunitaria'];
+  const demoIds = ['demo-1', 'demo-2'];
+
+  return (events || []).filter((event) => {
+    const isDemo = demoIds.includes(event.id) || demoTitles.includes(event.title);
+    return !isDemo;
+  });
+}
+
 function loadEvents() {
   const sharedEvents = decodeEventsFromUrl();
   if (sharedEvents) {
-    return sharedEvents;
+    return pruneDemoEvents(sharedEvents);
   }
 
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const parsed = data ? JSON.parse(data) : [];
+    return pruneDemoEvents(parsed);
   } catch (error) {
     console.error('No se pudieron cargar los eventos', error);
     return [];
