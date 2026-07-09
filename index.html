@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendario de Eventos Verdes</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-content">
+          <div class="brand-block">
+            <img src="logo.jpg" alt="Logo del calendario" class="hero-logo" />
+            <div>
+              <p class="eyebrow">Gestión de compromisos</p>
+              <h1>Calendario de eventos</h1>
+              <p class="hero-copy">
+                Organiza tus eventos, compromisos y comités responsables desde una sola vista.
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="calendar-card">
+          <div class="calendar-header">
+            <button id="prevMonth" class="nav-btn" type="button">←</button>
+            <h2 id="monthLabel"></h2>
+            <button id="nextMonth" class="nav-btn" type="button">→</button>
+          </div>
+
+          <div class="weekday-row">
+            <span>Dom</span>
+            <span>Lun</span>
+            <span>Mar</span>
+            <span>Mié</span>
+            <span>Jue</span>
+            <span>Vie</span>
+            <span>Sáb</span>
+          </div>
+
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Día seleccionado</p>
+              <h3 id="selectedDateLabel"></h3>
+            </div>
+            <div class="panel-pill">Eventos del día</div>
+          </div>
+
+          <form id="eventForm" class="event-form">
+            <input type="hidden" id="eventId" />
+
+            <label>
+              Título del evento
+              <input id="title" name="title" type="text" placeholder="Reunión de comité" required />
+            </label>
+
+            <div class="form-row">
+              <label>
+                Fecha
+                <input id="eventDate" name="eventDate" type="date" required />
+              </label>
+              <label>
+                Hora
+                <input id="time" name="time" type="time" required />
+              </label>
+            </div>
+
+            <label>
+              Descripción
+              <textarea id="description" name="description" rows="3" placeholder="Detalle del compromiso o objetivo"></textarea>
+            </label>
+
+            <label>
+              Lugar
+              <input id="location" name="location" type="text" placeholder="Ubicación o sala del evento" required />
+            </label>
+
+            <div class="form-row">
+              <label>
+                Comité responsable
+                <input id="committee" name="committee" type="text" placeholder="Comité de logística" required />
+              </label>
+              <label>
+                Responsable
+                <input id="responsible" name="responsible" type="text" placeholder="Nombre del encargado" required />
+              </label>
+            </div>
+
+            <label>
+              Compromiso del evento
+              <textarea id="commitment" name="commitment" rows="2" placeholder="Qué debe cumplirse en este evento"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" id="submitBtn">Crear evento</button>
+              <button type="button" id="exportBtn" class="secondary">Exportar a Excel</button>
+              <button type="button" id="cancelEditBtn" class="secondary hidden">Cancelar edición</button>
+            </div>
+          </form>
+
+          <div id="eventList" class="event-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
