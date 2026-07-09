@@ -25,7 +25,51 @@ const submitBtn = document.getElementById('submitBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const exportBtn = document.getElementById('exportBtn');
 
+function encodeEventsForUrl(events) {
+  const json = JSON.stringify(events);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function decodeEventsFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('events');
+  if (!encoded) return null;
+
+  try {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (error) {
+    console.error('No se pudieron cargar los eventos desde la URL', error);
+    return null;
+  }
+}
+
+function updateUrlWithEvents(events) {
+  const params = new URLSearchParams(window.location.search);
+  if (events.length) {
+    params.set('events', encodeEventsForUrl(events));
+  } else {
+    params.delete('events');
+  }
+
+  const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', newUrl);
+}
+
 function loadEvents() {
+  const sharedEvents = decodeEventsFromUrl();
+  if (sharedEvents) {
+    return sharedEvents;
+  }
+
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
@@ -37,6 +81,7 @@ function loadEvents() {
 
 function saveEvents() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
+  updateUrlWithEvents(state.events);
 }
 
 function toDateKey(date) {
@@ -289,30 +334,7 @@ function downloadExcelReport() {
 
 function bootstrap() {
   if (!state.events.length) {
-    state.events = [
-      {
-        id: 'demo-1',
-        title: 'Revisión de agenda',
-        date: toDateKey(state.selectedDate),
-        time: '09:00',
-        description: 'Reunión de seguimiento del comité verde.',
-        location: 'Sala de juntas principal',
-        committee: 'Comité de organización',
-        responsible: 'Delber Beltrán',
-        commitment: 'Confirmar los puntos de la agenda'
-      },
-      {
-        id: 'demo-2',
-        title: 'Campaña comunitaria',
-        date: toDateKey(new Date(state.selectedDate.getFullYear(), state.selectedDate.getMonth(), state.selectedDate.getDate() + 1)),
-        time: '15:30',
-        description: 'Preparación del evento del fin de semana.',
-        location: 'Centro comunitario',
-        committee: 'Comité de logística',
-        responsible: 'Sandra Ortiz',
-        commitment: 'Entregar materiales para la campaña'
-      }
-    ];
+    state.events = [];
     saveEvents();
   }
 
