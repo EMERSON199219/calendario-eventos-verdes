@@ -44,11 +44,6 @@ const authStatus = document.getElementById('authStatus');
 const userIndicator = document.getElementById('userIndicator');
 const logoutBtn = document.getElementById('logoutBtn');
 const appContent = document.getElementById('appContent');
-const adminPanel = document.getElementById('adminPanel');
-const adminCreateForm = document.getElementById('adminCreateForm');
-const newUsernameInput = document.getElementById('newUsername');
-const newPasswordInput = document.getElementById('newPassword');
-const adminUsersList = document.getElementById('adminUsersList');
 
 function base64UrlEncode(bytes) {
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
@@ -613,32 +608,6 @@ function updateAuthHelp() {
   }
 }
 
-function renderAdminUsers() {
-  if (!adminUsersList) return;
-
-  const users = loadUsers();
-  const entries = Object.entries(users)
-    .sort(([a, userA], [b, userB]) => {
-      if (userA.isAdmin !== userB.isAdmin) return userA.isAdmin ? -1 : 1;
-      return a.localeCompare(b);
-    });
-
-  if (!entries.length) {
-    adminUsersList.innerHTML = '<div class="empty-state">No hay cuentas creadas aún.</div>';
-    return;
-  }
-
-  adminUsersList.innerHTML = entries.map(([username, user]) => `
-    <div class="user-row">
-      <div>
-        <strong>${username}</strong>
-        ${user.isAdmin ? '<span class="panel-pill">Super admin</span>' : ''}
-      </div>
-      <div>${user.events?.length ?? 0} eventos</div>
-    </div>
-  `).join('');
-}
-
 function updateAuthDisplay() {
   const isLoggedIn = Boolean(state.currentUser);
   const hasShared = !state.currentUser && Boolean(decodeEventsFromUrl());
@@ -647,14 +616,12 @@ function updateAuthDisplay() {
   authCard.classList.toggle('hidden', isLoggedIn);
   appContent.classList.toggle('hidden', !isLoggedIn && !hasShared);
   authStatus.classList.toggle('hidden', !isLoggedIn);
-  adminPanel.classList.toggle('hidden', !isAdmin);
 
   if (isLoggedIn) {
     userIndicator.textContent = `Sesión: ${state.currentUser}${isAdmin ? ' (Super admin)' : ''}`;
   }
 
   updateAuthHelp();
-  renderAdminUsers();
 }
 
 async function handleAuthSubmit(event) {
@@ -716,29 +683,6 @@ async function handleAuthSubmit(event) {
   render();
 }
 
-function handleAdminCreate(event) {
-  event.preventDefault();
-  if (!isCurrentUserAdmin()) return;
-
-  const username = newUsernameInput.value.trim();
-  const password = newPasswordInput.value.trim();
-
-  if (!username || !password) {
-    alert('Completa usuario y contraseña para crear la cuenta.');
-    return;
-  }
-
-  if (!createUser(username, password, false)) {
-    alert('El usuario ya existe. Usa otro nombre.');
-    return;
-  }
-
-  newUsernameInput.value = '';
-  newPasswordInput.value = '';
-  renderAdminUsers();
-  showAuthMessage(`Cuenta de usuario "${username}" creada correctamente.`, true);
-}
-
 function logout() {
   state.currentUser = null;
   saveCurrentUser(null);
@@ -760,7 +704,6 @@ function bootstrap() {
   }
 
   authForm.addEventListener('submit', handleAuthSubmit);
-  adminCreateForm.addEventListener('submit', handleAdminCreate);
   logoutBtn.addEventListener('click', logout);
   eventForm.addEventListener('submit', handleSubmit);
   cancelEditBtn.addEventListener('click', resetForm);
