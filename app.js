@@ -7,7 +7,6 @@ const state = {
   selectedDate: new Date(),
   editingEventId: null,
   currentUser: loadCurrentUser(),
-  authMode: 'login',
   events: []
 };
 
@@ -34,12 +33,17 @@ const authForm = document.getElementById('authForm');
 const authUsernameInput = document.getElementById('authUsername');
 const authPasswordInput = document.getElementById('authPassword');
 const authSubmitBtn = document.getElementById('authSubmit');
-const authToggleBtn = document.getElementById('authToggle');
 const authMessage = document.getElementById('authMessage');
+const authHelpText = document.getElementById('authHelpText');
 const authStatus = document.getElementById('authStatus');
 const userIndicator = document.getElementById('userIndicator');
 const logoutBtn = document.getElementById('logoutBtn');
 const appContent = document.getElementById('appContent');
+const adminPanel = document.getElementById('adminPanel');
+const adminCreateForm = document.getElementById('adminCreateForm');
+const newUsernameInput = document.getElementById('newUsername');
+const newPasswordInput = document.getElementById('newPassword');
+const adminUsersList = document.getElementById('adminUsersList');
 
 function encodeEventsForUrl(events) {
   const json = JSON.stringify(events);
@@ -127,10 +131,20 @@ function setUserEvents(username, events) {
   saveUsers(users);
 }
 
-function createUser(username, password) {
+function hasSuperAdmin() {
+  const users = loadUsers();
+  return Object.values(users).some((user) => user.isAdmin);
+}
+
+function isCurrentUserAdmin() {
+  const users = loadUsers();
+  return Boolean(state.currentUser && users[state.currentUser]?.isAdmin);
+}
+
+function createUser(username, password, isAdmin = false) {
   const users = loadUsers();
   if (users[username]) return false;
-  users[username] = { password, events: [] };
+  users[username] = { password, events: [], isAdmin };
   saveUsers(users);
   return true;
 }
@@ -429,8 +443,8 @@ function copySharedLink() {
     return;
   }
 
-  const url = window.location.href;
-  navigator.clipboard.writeText(url)
+  const sharedUrl = `${window.location.origin}${window.location.pathname}?events=${encodeEventsForUrl(state.events)}`;
+  navigator.clipboard.writeText(sharedUrl)
     .then(() => {
       alert('Enlace compartido copiado al portapapeles.');
     })
@@ -440,26 +454,62 @@ function copySharedLink() {
     });
 }
 
-function setAuthMode(mode) {
-  state.authMode = mode;
-  authSubmitBtn.textContent = mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
-  authToggleBtn.textContent = mode === 'login' ? 'Crear cuenta' : 'Volver a iniciar sesión';
-  authMessage.textContent = '';
-}
-
 function showAuthMessage(message, success = true) {
   authMessage.textContent = message;
   authMessage.style.color = success ? 'var(--green-800)' : '#b91c1c';
 }
 
+function updateAuthHelp() {
+  if (!authHelpText) return;
+  if (!hasSuperAdmin()) {
+    authHelpText.textContent = 'Crea la primera cuenta para ser super admin. Luego podrás crear usuarios desde el panel.';
+  } else {
+    authHelpText.textContent = 'Inicia sesión con tu usuario. El super admin puede crear nuevas cuentas.';
+  }
+}
+
+function renderAdminUsers() {
+  if (!adminUsersList) return;
+
+  const users = loadUsers();
+  const entries = Object.entries(users)
+    .sort(([a, userA], [b, userB]) => {
+      if (userA.isAdmin !== userB.isAdmin) return userA.isAdmin ? -1 : 1;
+      return a.localeCompare(b);
+    });
+
+  if (!entries.length) {
+    adminUsersList.innerHTML = '<div class="empty-state">No hay cuentas creadas aún.</div>';
+    return;
+  }
+
+  adminUsersList.innerHTML = entries.map(([username, user]) => `
+    <div class="user-row">
+      <div>
+        <strong>${username}</strong>
+        ${user.isAdmin ? '<span class="panel-pill">Super admin</span>' : ''}
+      </div>
+      <div>${user.events?.length ?? 0} eventos</div>
+    </div>
+  `).join('');
+}
+
 function updateAuthDisplay() {
   const isLoggedIn = Boolean(state.currentUser);
+  const hasShared = !state.currentUser && Boolean(decodeEventsFromUrl());
+  const isAdmin = isCurrentUserAdmin();
+
   authCard.classList.toggle('hidden', isLoggedIn);
-  appContent.classList.toggle('hidden', !isLoggedIn);
+  appContent.classList.toggle('hidden', !isLoggedIn && !hasShared);
   authStatus.classList.toggle('hidden', !isLoggedIn);
+  adminPanel.classList.toggle('hidden', !isAdmin);
+
   if (isLoggedIn) {
-    userIndicator.textContent = `Sesión: ${state.currentUser}`;
+    userIndicator.textContent = `Sesión: ${state.currentUser}${isAdmin ? ' (Super admin)' : ''}`;
   }
+
+  updateAuthHelp();
+  renderAdminUsers();
 }
 
 function handleAuthSubmit(event) {
@@ -472,7 +522,32 @@ function handleAuthSubmit(event) {
     return;
   }
 
-  if (state.authMode === 'login') {
+  if (!hasSuperAdmin()) {
+    const users = loadUsers();
+    const existingUser = users[username];
+
+    if (existingUser) {
+      if (!verifyUser(username, password)) {
+        showAuthMessage('Usuario o contraseña incorrectos.', false);
+        return;
+      }
+      existingUser.isAdmin = true;
+      saveUsers(users);
+      state.currentUser = username;
+      saveCurrentUser(username);
+      state.events = getUserEvents(username);
+      showAuthMessage(`Cuenta convertida en super admin. Bienvenido ${username}.`, true);
+    } else {
+      if (!createUser(username, password, true)) {
+        showAuthMessage('No se pudo crear la cuenta de super admin.', false);
+        return;
+      }
+      state.currentUser = username;
+      saveCurrentUser(username);
+      state.events = [];
+      showAuthMessage(`Cuenta de super admin creada. Bienvenido ${username}.`, true);
+    }
+  } else {
     if (!verifyUser(username, password)) {
       showAuthMessage('Usuario o contraseña incorrectos.', false);
       return;
@@ -481,35 +556,44 @@ function handleAuthSubmit(event) {
     saveCurrentUser(username);
     state.events = loadEvents();
     showAuthMessage(`Bienvenido ${username}.`, true);
-    updateAuthDisplay();
-    resetForm();
-    render();
-  } else {
-    if (!createUser(username, password)) {
-      showAuthMessage('El usuario ya existe. Elige otro nombre.', false);
-      return;
-    }
-    state.currentUser = username;
-    saveCurrentUser(username);
-    state.events = [];
-    saveEvents();
-    showAuthMessage(`Cuenta creada. Bienvenido ${username}.`, true);
-    updateAuthDisplay();
-    resetForm();
-    render();
   }
+
+  authForm.reset();
+  updateAuthDisplay();
+  resetForm();
+  render();
 }
 
-function handleAuthToggle() {
-  setAuthMode(state.authMode === 'login' ? 'register' : 'login');
+function handleAdminCreate(event) {
+  event.preventDefault();
+  if (!isCurrentUserAdmin()) return;
+
+  const username = newUsernameInput.value.trim();
+  const password = newPasswordInput.value.trim();
+
+  if (!username || !password) {
+    alert('Completa usuario y contraseña para crear la cuenta.');
+    return;
+  }
+
+  if (!createUser(username, password, false)) {
+    alert('El usuario ya existe. Usa otro nombre.');
+    return;
+  }
+
+  newUsernameInput.value = '';
+  newPasswordInput.value = '';
+  renderAdminUsers();
+  showAuthMessage(`Cuenta de usuario "${username}" creada correctamente.`, true);
 }
 
 function logout() {
   state.currentUser = null;
   saveCurrentUser(null);
-  state.events = [];
-  setAuthMode('login');
+  state.events = loadEvents();
+  authForm.reset();
   updateAuthDisplay();
+  render();
 }
 
 function bootstrap() {
@@ -523,7 +607,7 @@ function bootstrap() {
   }
 
   authForm.addEventListener('submit', handleAuthSubmit);
-  authToggleBtn.addEventListener('click', handleAuthToggle);
+  adminCreateForm.addEventListener('submit', handleAdminCreate);
   logoutBtn.addEventListener('click', logout);
   eventForm.addEventListener('submit', handleSubmit);
   cancelEditBtn.addEventListener('click', resetForm);
@@ -547,7 +631,6 @@ function bootstrap() {
 
   updateLogoImage();
   updateAuthDisplay();
-  setAuthMode(state.authMode);
   render();
 }
 

@@ -27,7 +27,7 @@
       <main class="layout">
         <section id="authCard" class="auth-card hidden">
           <h2>Ingreso de usuario</h2>
-          <p>Regístrate o inicia sesión para guardar tus eventos en tu cuenta.</p>
+          <p id="authHelpText" class="auth-help">Inicia sesión para guardar tus eventos. Si aún no hay un super admin, crea la primera cuenta.</p>
           <form id="authForm" class="auth-form">
             <label>
               Usuario
@@ -39,7 +39,6 @@
             </label>
             <div class="auth-actions">
               <button type="submit" id="authSubmit">Iniciar sesión</button>
-              <button type="button" id="authToggle" class="secondary">Crear cuenta</button>
             </div>
           </form>
           <div id="authMessage" class="auth-message"></div>
@@ -129,6 +128,29 @@
           </form>
 
           <div id="eventList" class="event-list"></div>
+        </section>
+
+        <section id="adminPanel" class="admin-panel hidden">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Super admin</p>
+              <h3>Administrar cuentas</h3>
+            </div>
+          </div>
+          <form id="adminCreateForm" class="admin-form">
+            <div class="form-row">
+              <label>
+                Nombre de usuario
+                <input id="newUsername" type="text" placeholder="Usuario" required />
+              </label>
+              <label>
+                Contraseña
+                <input id="newPassword" type="password" placeholder="Contraseña" required />
+              </label>
+            </div>
+            <button type="submit" class="secondary">Crear cuenta de usuario</button>
+          </form>
+          <div id="adminUsersList" class="user-list"></div>
         </section>
       </section>
       </main>

@@ -49,7 +49,18 @@ textarea {
 }
 
 .hero-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   flex: 1;
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  z-index: 2;
 }
 
 .brand-block {
@@ -108,7 +119,8 @@ textarea {
 }
 
 .calendar-card,
-.panel {
+.panel,
+.admin-panel {
   background: white;
   border-radius: 24px;
   padding: 20px;
@@ -268,10 +280,34 @@ textarea {
   margin-top: 0;
 }
 
+.auth-help {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
 .auth-form {
   display: grid;
   gap: 16px;
   margin-top: 16px;
+}
+
+.admin-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-form input {
+  width: 100%;
+}
+
+.user-list {
+  display: grid;
+  gap: 10px;
 }
 
 .auth-form input {
@@ -311,6 +347,19 @@ textarea {
   margin-top: 18px;
   display: grid;
   gap: 12px;
+}
+
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e3f0e6;
+}
+
+.user-row:last-child {
+  border-bottom: none;
 }
 
 .event-card {
