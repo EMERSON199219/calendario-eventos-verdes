@@ -1,12 +1,11 @@
 // Configuración de Firebase
-// Reemplaza estos valores con los de tu proyecto Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyDICm3Q3Q3Q3Q3Q3Q3Q3Q3Q3Q3Q3Q3Q3Q", // Reemplazar
-  authDomain: "tu-proyecto.firebaseapp.com",         // Reemplazar
-  projectId: "tu-proyecto",                          // Reemplazar
-  storageBucket: "tu-proyecto.appspot.com",         // Reemplazar
-  messagingSenderId: "123456789",                   // Reemplazar
-  appId: "1:123456789:web:abcd1234efgh5678"        // Reemplazar
+  apiKey: "AIzaSyDHKR1UkqAaT1Jka_v9euo3afb4E2XloA",
+  authDomain: "cronograma-47eed.firebaseapp.com",
+  projectId: "cronograma-47eed",
+  storageBucket: "cronograma-47eed.firebasestorage.app",
+  messagingSenderId: "527539901782",
+  appId: "1:527539901782:web:OWU4NDdhMDctM2QzNy00YzA5LWE2NDYtzU4ZDUyNGUyOGEy"
 };
 
 // Inicializar Firebase
