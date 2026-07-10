@@ -12,7 +12,8 @@ const state = {
   selectedDate: new Date(),
   editingEventId: null,
   currentUser: loadCurrentUser(),
-  events: []
+  events: [],
+  firestoreUnsubscribe: null
 };
 
 const monthLabel = document.getElementById('monthLabel');
@@ -335,6 +336,51 @@ async function syncEventsToFirestore(username) {
     console.log('Eventos sincronizados correctamente');
   } catch (error) {
     console.error('Error al sincronizar eventos:', error);
+  }
+}
+
+function setupFirestoreListener(username) {
+  if (!db) {
+    console.warn('Firestore no está disponible para listener');
+    return;
+  }
+
+  // Desuscribir listener anterior si existe
+  if (state.firestoreUnsubscribe) {
+    state.firestoreUnsubscribe();
+  }
+
+  console.log('Configurando listener en tiempo real para:', username);
+
+  // Escuchar cambios en tiempo real
+  state.firestoreUnsubscribe = db.collection('users').doc(username).onSnapshot(
+    (doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        console.log('Cambios detectados en Firestore:', data.events);
+        
+        // Solo actualizar si los eventos son diferentes
+        const remoteEvents = data.events || [];
+        const localEvents = state.events;
+        
+        if (JSON.stringify(remoteEvents) !== JSON.stringify(localEvents)) {
+          console.log('Actualizando eventos desde Firestore...');
+          state.events = remoteEvents;
+          render();
+        }
+      }
+    },
+    (error) => {
+      console.error('Error en listener de Firestore:', error);
+    }
+  );
+}
+
+function stopFirestoreListener() {
+  if (state.firestoreUnsubscribe) {
+    console.log('Deteniendo listener de Firestore');
+    state.firestoreUnsubscribe();
+    state.firestoreUnsubscribe = null;
   }
 }
 
@@ -717,11 +763,18 @@ async function handleAuthSubmit(event) {
 
   authForm.reset();
   updateAuthDisplay();
+  
+  // Configurar listener en tiempo real para Firestore
+  if (state.currentUser) {
+    setupFirestoreListener(state.currentUser);
+  }
+  
   resetForm();
   render();
 }
 
 function logout() {
+  stopFirestoreListener();
   state.currentUser = null;
   saveCurrentUser(null);
   state.events = loadEvents();
