@@ -188,6 +188,19 @@ function setUserEvents(username, events) {
   users[username] = users[username] || { password: '', events: [] };
   users[username].events = events;
   saveUsers(users);
+
+  if (db && state.currentUser === username) {
+    db.collection('users')
+      .doc(username)
+      .set(
+        {
+          events: events,
+          lastUpdated: new Date()
+        },
+        { merge: true }
+      )
+      .catch((error) => console.error('Error al guardar en Firestore:', error));
+  }
 }
 
 function hasSuperAdmin() {
@@ -287,6 +300,20 @@ function saveEvents() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
     updateUrlWithEvents(state.events);
   }
+}
+
+async function loadEventsFromFirestore(username) {
+  if (!db) return null;
+
+  try {
+    const doc = await db.collection('users').doc(username).get();
+    if (doc.exists) {
+      return doc.data().events || [];
+    }
+  } catch (error) {
+    console.error('Error al cargar eventos de Firestore:', error);
+  }
+  return null;
 }
 
 function toDateKey(date) {
@@ -629,7 +656,7 @@ function updateAuthDisplay() {
   renderAdminUsers();
 }
 
-function handleAuthSubmit(event) {
+async function handleAuthSubmit(event) {
   event.preventDefault();
   const username = authUsernameInput.value.trim();
   const password = authPasswordInput.value.trim();
@@ -652,7 +679,8 @@ function handleAuthSubmit(event) {
       saveUsers(users);
       state.currentUser = username;
       saveCurrentUser(username);
-      state.events = getUserEvents(username);
+      const firestoreEvents = await loadEventsFromFirestore(username);
+      state.events = firestoreEvents || getUserEvents(username);
       showAuthMessage(`Cuenta convertida en super admin. Bienvenido ${username}.`, true);
     } else {
       if (!createUser(username, password, true)) {
@@ -671,7 +699,10 @@ function handleAuthSubmit(event) {
     }
     state.currentUser = username;
     saveCurrentUser(username);
-    state.events = loadEvents();
+    
+    const firestoreEvents = await loadEventsFromFirestore(username);
+    state.events = firestoreEvents || loadEvents();
+    
     if (state.events.length) {
       setSelectedDateFromEvents(state.events);
     }
