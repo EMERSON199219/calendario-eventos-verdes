@@ -299,17 +299,43 @@ function saveEvents() {
 }
 
 async function loadEventsFromFirestore(username) {
-  if (!db) return null;
+  if (!db) {
+    console.warn('Firestore no está disponible, usando localStorage');
+    return null;
+  }
 
   try {
+    console.log('Cargando eventos de Firestore para:', username);
     const doc = await db.collection('users').doc(username).get();
     if (doc.exists) {
+      console.log('Eventos cargados de Firestore:', doc.data().events);
       return doc.data().events || [];
     }
   } catch (error) {
     console.error('Error al cargar eventos de Firestore:', error);
   }
   return null;
+}
+
+async function syncEventsToFirestore(username) {
+  if (!db) {
+    console.warn('Firestore no está disponible');
+    return;
+  }
+
+  try {
+    console.log('Sincronizando eventos a Firestore...', state.events);
+    await db.collection('users').doc(username).set(
+      {
+        events: state.events,
+        lastUpdated: new Date()
+      },
+      { merge: true }
+    );
+    console.log('Eventos sincronizados correctamente');
+  } catch (error) {
+    console.error('Error al sincronizar eventos:', error);
+  }
 }
 
 function toDateKey(date) {
@@ -481,13 +507,19 @@ function startEdit(id) {
 function deleteEvent(id) {
   state.events = state.events.filter((event) => event.id !== id);
   saveEvents();
+  
+  // Sincronizar a Firestore si hay usuario logueado
+  if (state.currentUser) {
+    syncEventsToFirestore(state.currentUser);
+  }
+  
   if (state.editingEventId === id) {
     resetForm();
   }
   render();
 }
 
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
 
   const payload = {
@@ -516,6 +548,12 @@ function handleSubmit(event) {
   }
 
   saveEvents();
+  
+  // Sincronizar a Firestore si hay usuario logueado
+  if (state.currentUser) {
+    await syncEventsToFirestore(state.currentUser);
+  }
+  
   resetForm();
   render();
 }
