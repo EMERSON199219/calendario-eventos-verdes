@@ -45,14 +45,25 @@ const newUsernameInput = document.getElementById('newUsername');
 const newPasswordInput = document.getElementById('newPassword');
 const adminUsersList = document.getElementById('adminUsersList');
 
+function base64UrlEncode(bytes) {
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(encoded) {
+  let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
 function encodeEventsForUrl(events) {
   const json = JSON.stringify(events);
   const bytes = new TextEncoder().encode(json);
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
+  return base64UrlEncode(bytes);
 }
 
 function decodeEventsFromUrl() {
@@ -61,8 +72,7 @@ function decodeEventsFromUrl() {
   if (!encoded) return null;
 
   try {
-    const binary = atob(encoded);
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const bytes = base64UrlDecode(encoded);
     const json = new TextDecoder().decode(bytes);
     const parsed = JSON.parse(json);
     return Array.isArray(parsed) ? parsed : null;
@@ -75,19 +85,14 @@ function decodeEventsFromUrl() {
 function encodeObjectForUrl(data) {
   const json = JSON.stringify(data);
   const bytes = new TextEncoder().encode(json);
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
+  return base64UrlEncode(bytes);
 }
 
 function decodeObjectFromUrl(encoded) {
   if (!encoded) return null;
 
   try {
-    const binary = atob(encoded);
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const bytes = base64UrlDecode(encoded);
     const json = new TextDecoder().decode(bytes);
     return JSON.parse(json);
   } catch (error) {
