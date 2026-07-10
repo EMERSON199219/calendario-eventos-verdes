@@ -189,7 +189,8 @@ function setUserEvents(username, events) {
   users[username].events = events;
   saveUsers(users);
 
-  if (db && state.currentUser === username) {
+  // Guardar en Firestore si está disponible
+  if (db) {
     db.collection('users')
       .doc(username)
       .set(
