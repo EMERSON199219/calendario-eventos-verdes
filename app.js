@@ -101,13 +101,24 @@ function decodeUsersFromUrl() {
   return decodeObjectFromUrl(params.get('users'));
 }
 
+function decodeSharedUserFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('sharedUser');
+}
+
 function loadSharedUsersIfNeeded() {
   const sharedUsers = decodeUsersFromUrl();
+  const sharedUser = decodeSharedUserFromUrl();
   if (!sharedUsers) return;
 
   const existingUsers = loadUsers();
   const mergedUsers = { ...existingUsers, ...sharedUsers };
   saveUsers(mergedUsers);
+
+  if (!state.currentUser && sharedUser && mergedUsers[sharedUser]) {
+    state.currentUser = sharedUser;
+    saveCurrentUser(sharedUser);
+  }
 }
 
 function updateUrlWithEvents(events) {
@@ -495,13 +506,13 @@ function downloadExcelReport() {
 }
 
 function copySharedLink() {
-  if (!state.events.length) {
-    alert('No hay eventos para compartir todavía. Crea un evento primero.');
-    return;
-  }
-
   const url = new URL(window.location.href);
-  url.searchParams.set('events', encodeEventsForUrl(state.events));
+
+  if (state.events.length) {
+    url.searchParams.set('events', encodeEventsForUrl(state.events));
+  } else {
+    url.searchParams.delete('events');
+  }
 
   if (state.currentUser) {
     const users = loadUsers();
@@ -509,7 +520,13 @@ function copySharedLink() {
     if (currentUserData) {
       const sharedUsers = { [state.currentUser]: currentUserData };
       url.searchParams.set('users', encodeObjectForUrl(sharedUsers));
+      url.searchParams.set('sharedUser', state.currentUser);
     }
+  }
+
+  if (!url.searchParams.has('events') && !url.searchParams.has('users')) {
+    alert('No hay datos para compartir. Crea un evento o inicia sesión como administrador.');
+    return;
   }
 
   navigator.clipboard.writeText(url.toString())
