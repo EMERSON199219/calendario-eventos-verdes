@@ -2,6 +2,11 @@ const STORAGE_KEY = 'green-calendar-events-v1';
 const USERS_KEY = 'green-calendar-users-v1';
 const CURRENT_USER_KEY = 'green-calendar-current-user-v1';
 
+const DEFAULT_SUPERADMIN = {
+  username: 'COMBO27',
+  password: 'Combo2027@'
+};
+
 const state = {
   currentDate: new Date(),
   selectedDate: new Date(),
@@ -187,12 +192,18 @@ function setUserEvents(username, events) {
 
 function hasSuperAdmin() {
   const users = loadUsers();
-  return Object.values(users).some((user) => user.isAdmin);
+  if (Object.values(users).some((user) => user.isAdmin)) {
+    return true;
+  }
+  return Boolean(DEFAULT_SUPERADMIN.username && DEFAULT_SUPERADMIN.password);
 }
 
 function isCurrentUserAdmin() {
   const users = loadUsers();
-  return Boolean(state.currentUser && users[state.currentUser]?.isAdmin);
+  if (state.currentUser && users[state.currentUser]?.isAdmin) {
+    return true;
+  }
+  return state.currentUser === DEFAULT_SUPERADMIN.username;
 }
 
 function createUser(username, password, isAdmin = false) {
@@ -205,7 +216,23 @@ function createUser(username, password, isAdmin = false) {
 
 function verifyUser(username, password) {
   const users = loadUsers();
-  return users[username] && users[username].password === password;
+  const storedUser = users[username];
+
+  if (storedUser) {
+    return storedUser.password === password;
+  }
+
+  if (username === DEFAULT_SUPERADMIN.username && password === DEFAULT_SUPERADMIN.password) {
+    users[username] = {
+      password,
+      events: [],
+      isAdmin: true
+    };
+    saveUsers(users);
+    return true;
+  }
+
+  return false;
 }
 
 function loadEvents() {
