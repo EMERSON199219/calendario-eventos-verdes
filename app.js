@@ -1,10 +1,14 @@
 const STORAGE_KEY = 'green-calendar-events-v1';
+const USERS_KEY = 'green-calendar-users-v1';
+const CURRENT_USER_KEY = 'green-calendar-current-user-v1';
 
 const state = {
   currentDate: new Date(),
   selectedDate: new Date(),
   editingEventId: null,
-  events: loadEvents()
+  currentUser: loadCurrentUser(),
+  authMode: 'login',
+  events: []
 };
 
 const monthLabel = document.getElementById('monthLabel');
@@ -25,6 +29,17 @@ const submitBtn = document.getElementById('submitBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const exportBtn = document.getElementById('exportBtn');
 const copyLinkBtn = document.getElementById('copyLinkBtn');
+const authCard = document.getElementById('authCard');
+const authForm = document.getElementById('authForm');
+const authUsernameInput = document.getElementById('authUsername');
+const authPasswordInput = document.getElementById('authPassword');
+const authSubmitBtn = document.getElementById('authSubmit');
+const authToggleBtn = document.getElementById('authToggle');
+const authMessage = document.getElementById('authMessage');
+const authStatus = document.getElementById('authStatus');
+const userIndicator = document.getElementById('userIndicator');
+const logoutBtn = document.getElementById('logoutBtn');
+const appContent = document.getElementById('appContent');
 
 function encodeEventsForUrl(events) {
   const json = JSON.stringify(events);
@@ -75,7 +90,61 @@ function pruneDemoEvents(events) {
   });
 }
 
+function loadUsers() {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+function loadCurrentUser() {
+  return localStorage.getItem(CURRENT_USER_KEY);
+}
+
+function saveCurrentUser(username) {
+  if (username) {
+    localStorage.setItem(CURRENT_USER_KEY, username);
+  } else {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  }
+}
+
+function getUserEvents(username) {
+  const users = loadUsers();
+  return users[username]?.events || [];
+}
+
+function setUserEvents(username, events) {
+  const users = loadUsers();
+  users[username] = users[username] || { password: '', events: [] };
+  users[username].events = events;
+  saveUsers(users);
+}
+
+function createUser(username, password) {
+  const users = loadUsers();
+  if (users[username]) return false;
+  users[username] = { password, events: [] };
+  saveUsers(users);
+  return true;
+}
+
+function verifyUser(username, password) {
+  const users = loadUsers();
+  return users[username] && users[username].password === password;
+}
+
 function loadEvents() {
+  if (state.currentUser) {
+    return pruneDemoEvents(getUserEvents(state.currentUser));
+  }
+
   const sharedEvents = decodeEventsFromUrl();
   if (sharedEvents) {
     return pruneDemoEvents(sharedEvents);
@@ -98,8 +167,12 @@ function getInitialEventDate(events) {
 }
 
 function saveEvents() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
-  updateUrlWithEvents(state.events);
+  if (state.currentUser) {
+    setUserEvents(state.currentUser, state.events);
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.events));
+    updateUrlWithEvents(state.events);
+  }
 }
 
 function toDateKey(date) {
@@ -313,7 +386,7 @@ function handleSubmit(event) {
 function updateLogoImage() {
   const logo = document.querySelector('.hero-logo');
   if (logo) {
-    logo.src = `logo.jpg?cb=${Date.now()}`;
+    logo.src = `logo.jpeg?cb=${Date.now()}`;
   }
 }
 
@@ -367,11 +440,81 @@ function copySharedLink() {
     });
 }
 
-function bootstrap() {
-  if (!state.events.length) {
+function setAuthMode(mode) {
+  state.authMode = mode;
+  authSubmitBtn.textContent = mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
+  authToggleBtn.textContent = mode === 'login' ? 'Crear cuenta' : 'Volver a iniciar sesión';
+  authMessage.textContent = '';
+}
+
+function showAuthMessage(message, success = true) {
+  authMessage.textContent = message;
+  authMessage.style.color = success ? 'var(--green-800)' : '#b91c1c';
+}
+
+function updateAuthDisplay() {
+  const isLoggedIn = Boolean(state.currentUser);
+  authCard.classList.toggle('hidden', isLoggedIn);
+  appContent.classList.toggle('hidden', !isLoggedIn);
+  authStatus.classList.toggle('hidden', !isLoggedIn);
+  if (isLoggedIn) {
+    userIndicator.textContent = `Sesión: ${state.currentUser}`;
+  }
+}
+
+function handleAuthSubmit(event) {
+  event.preventDefault();
+  const username = authUsernameInput.value.trim();
+  const password = authPasswordInput.value.trim();
+
+  if (!username || !password) {
+    showAuthMessage('Completa usuario y contraseña.', false);
+    return;
+  }
+
+  if (state.authMode === 'login') {
+    if (!verifyUser(username, password)) {
+      showAuthMessage('Usuario o contraseña incorrectos.', false);
+      return;
+    }
+    state.currentUser = username;
+    saveCurrentUser(username);
+    state.events = loadEvents();
+    showAuthMessage(`Bienvenido ${username}.`, true);
+    updateAuthDisplay();
+    resetForm();
+    render();
+  } else {
+    if (!createUser(username, password)) {
+      showAuthMessage('El usuario ya existe. Elige otro nombre.', false);
+      return;
+    }
+    state.currentUser = username;
+    saveCurrentUser(username);
     state.events = [];
     saveEvents();
-  } else {
+    showAuthMessage(`Cuenta creada. Bienvenido ${username}.`, true);
+    updateAuthDisplay();
+    resetForm();
+    render();
+  }
+}
+
+function handleAuthToggle() {
+  setAuthMode(state.authMode === 'login' ? 'register' : 'login');
+}
+
+function logout() {
+  state.currentUser = null;
+  saveCurrentUser(null);
+  state.events = [];
+  setAuthMode('login');
+  updateAuthDisplay();
+}
+
+function bootstrap() {
+  state.events = loadEvents();
+  if (state.events.length) {
     const startingDate = getInitialEventDate(state.events);
     if (startingDate) {
       state.selectedDate = startingDate;
@@ -379,6 +522,9 @@ function bootstrap() {
     }
   }
 
+  authForm.addEventListener('submit', handleAuthSubmit);
+  authToggleBtn.addEventListener('click', handleAuthToggle);
+  logoutBtn.addEventListener('click', logout);
   eventForm.addEventListener('submit', handleSubmit);
   cancelEditBtn.addEventListener('click', resetForm);
   exportBtn.addEventListener('click', downloadExcelReport);
@@ -400,6 +546,8 @@ function bootstrap() {
   });
 
   updateLogoImage();
+  updateAuthDisplay();
+  setAuthMode(state.authMode);
   render();
 }
 

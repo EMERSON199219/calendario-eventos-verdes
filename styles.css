@@ -35,15 +35,17 @@ textarea {
 }
 
 .hero {
+  position: relative;
   background: linear-gradient(135deg, var(--green-800), var(--green-500));
   color: white;
   border-radius: 24px;
   padding: 22px 24px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   box-shadow: var(--shadow);
   gap: 16px;
+  min-height: 150px;
 }
 
 .hero-content {
@@ -52,19 +54,23 @@ textarea {
 
 .brand-block {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
+  padding-left: 220px;
 }
 
 .hero-logo {
-  width: 150px;
-  height: 150px;
+  position: absolute;
+  top: 12px;
+  left: 24px;
+  width: 200px;
+  height: 200px;
+  z-index: 1;
   object-fit: contain;
   border-radius: 0;
   background: transparent;
   padding: 0;
   box-shadow: none;
-  flex-shrink: 0;
 }
 
 .eyebrow {
@@ -248,6 +254,43 @@ textarea {
   padding: 10px 15px;
   cursor: pointer;
   font-weight: 700;
+}
+
+.auth-card {
+  grid-column: 1 / -1;
+  background: white;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+.auth-card h2 {
+  margin-top: 0;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.auth-form input {
+  width: 100%;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.auth-message {
+  margin-top: 14px;
+  color: var(--green-800);
+}
+
+.hidden {
+  display: none;
 }
 
 .form-actions button[type='submit'] {

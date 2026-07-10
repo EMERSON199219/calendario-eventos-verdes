@@ -11,20 +11,42 @@
       <header class="hero">
         <div class="hero-content">
           <div class="brand-block">
-            <img src="logo.jpg" alt="Logo del calendario" class="hero-logo" />
+            <img src="logo.jpeg" alt="Logo del calendario" class="hero-logo" />
             <div>
               <p class="eyebrow">Gestión de compromisos</p>
               <h1>Calendario de eventos</h1>
-              <p class="hero-copy">
-                Organiza tus eventos, compromisos y comités responsables desde una sola vista.
-              </p>
-            </div>
+              </div>
+          </div>
+          <div id="authStatus" class="auth-status hidden">
+            <span id="userIndicator"></span>
+            <button type="button" id="logoutBtn" class="secondary">Cerrar sesión</button>
           </div>
         </div>
       </header>
 
       <main class="layout">
-        <section class="calendar-card">
+        <section id="authCard" class="auth-card hidden">
+          <h2>Ingreso de usuario</h2>
+          <p>Regístrate o inicia sesión para guardar tus eventos en tu cuenta.</p>
+          <form id="authForm" class="auth-form">
+            <label>
+              Usuario
+              <input id="authUsername" name="username" type="text" placeholder="Tu usuario" required />
+            </label>
+            <label>
+              Contraseña
+              <input id="authPassword" name="password" type="password" placeholder="Contraseña" required />
+            </label>
+            <div class="auth-actions">
+              <button type="submit" id="authSubmit">Iniciar sesión</button>
+              <button type="button" id="authToggle" class="secondary">Crear cuenta</button>
+            </div>
+          </form>
+          <div id="authMessage" class="auth-message"></div>
+        </section>
+
+        <section id="appContent" class="hidden">
+          <section class="calendar-card">
           <div class="calendar-header">
             <button id="prevMonth" class="nav-btn" type="button">←</button>
             <h2 id="monthLabel"></h2>
@@ -108,6 +130,7 @@
 
           <div id="eventList" class="event-list"></div>
         </section>
+      </section>
       </main>
     </div>
 
