@@ -24,6 +24,7 @@ const commitmentInput = document.getElementById('commitment');
 const submitBtn = document.getElementById('submitBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const exportBtn = document.getElementById('exportBtn');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
 
 function encodeEventsForUrl(events) {
   const json = JSON.stringify(events);
@@ -88,6 +89,12 @@ function loadEvents() {
     console.error('No se pudieron cargar los eventos', error);
     return [];
   }
+}
+
+function getInitialEventDate(events) {
+  if (!events || !events.length) return null;
+  const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  return parseDateKey(sortedEvents[0].date);
 }
 
 function saveEvents() {
@@ -343,15 +350,39 @@ function downloadExcelReport() {
   URL.revokeObjectURL(link.href);
 }
 
+function copySharedLink() {
+  if (!state.events.length) {
+    alert('No hay eventos para compartir todavía. Crea un evento primero.');
+    return;
+  }
+
+  const url = window.location.href;
+  navigator.clipboard.writeText(url)
+    .then(() => {
+      alert('Enlace compartido copiado al portapapeles.');
+    })
+    .catch((error) => {
+      console.error('No se pudo copiar el enlace', error);
+      alert('No se pudo copiar el enlace. Intenta copiarlo manualmente desde la barra de direcciones.');
+    });
+}
+
 function bootstrap() {
   if (!state.events.length) {
     state.events = [];
     saveEvents();
+  } else {
+    const startingDate = getInitialEventDate(state.events);
+    if (startingDate) {
+      state.selectedDate = startingDate;
+      state.currentDate = new Date(startingDate.getFullYear(), startingDate.getMonth(), 1);
+    }
   }
 
   eventForm.addEventListener('submit', handleSubmit);
   cancelEditBtn.addEventListener('click', resetForm);
   exportBtn.addEventListener('click', downloadExcelReport);
+  copyLinkBtn.addEventListener('click', copySharedLink);
   document.getElementById('prevMonth').addEventListener('click', () => {
     state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() - 1, 1);
     render();
