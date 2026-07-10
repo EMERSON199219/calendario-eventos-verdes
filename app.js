@@ -72,6 +72,44 @@ function decodeEventsFromUrl() {
   }
 }
 
+function encodeObjectForUrl(data) {
+  const json = JSON.stringify(data);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function decodeObjectFromUrl(encoded) {
+  if (!encoded) return null;
+
+  try {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json);
+  } catch (error) {
+    console.error('No se pudieron cargar los datos desde la URL', error);
+    return null;
+  }
+}
+
+function decodeUsersFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return decodeObjectFromUrl(params.get('users'));
+}
+
+function loadSharedUsersIfNeeded() {
+  const sharedUsers = decodeUsersFromUrl();
+  if (!sharedUsers) return;
+
+  const existingUsers = loadUsers();
+  const mergedUsers = { ...existingUsers, ...sharedUsers };
+  saveUsers(mergedUsers);
+}
+
 function updateUrlWithEvents(events) {
   const params = new URLSearchParams(window.location.search);
   if (events.length) {
@@ -156,7 +194,18 @@ function verifyUser(username, password) {
 
 function loadEvents() {
   if (state.currentUser) {
-    return pruneDemoEvents(getUserEvents(state.currentUser));
+    const userEvents = getUserEvents(state.currentUser);
+    if (userEvents.length) {
+      return pruneDemoEvents(userEvents);
+    }
+
+    const sharedEvents = decodeEventsFromUrl();
+    if (sharedEvents) {
+      setUserEvents(state.currentUser, sharedEvents);
+      return pruneDemoEvents(sharedEvents);
+    }
+
+    return [];
   }
 
   const sharedEvents = decodeEventsFromUrl();
@@ -178,6 +227,14 @@ function getInitialEventDate(events) {
   if (!events || !events.length) return null;
   const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
   return parseDateKey(sortedEvents[0].date);
+}
+
+function setSelectedDateFromEvents(events) {
+  if (!events || !events.length) return;
+  const startingDate = getInitialEventDate(events);
+  if (!startingDate) return;
+  state.selectedDate = startingDate;
+  state.currentDate = new Date(startingDate.getFullYear(), startingDate.getMonth(), 1);
 }
 
 function saveEvents() {
@@ -443,8 +500,19 @@ function copySharedLink() {
     return;
   }
 
-  const sharedUrl = `${window.location.origin}${window.location.pathname}?events=${encodeEventsForUrl(state.events)}`;
-  navigator.clipboard.writeText(sharedUrl)
+  const url = new URL(window.location.href);
+  url.searchParams.set('events', encodeEventsForUrl(state.events));
+
+  if (state.currentUser) {
+    const users = loadUsers();
+    const currentUserData = users[state.currentUser];
+    if (currentUserData) {
+      const sharedUsers = { [state.currentUser]: currentUserData };
+      url.searchParams.set('users', encodeObjectForUrl(sharedUsers));
+    }
+  }
+
+  navigator.clipboard.writeText(url.toString())
     .then(() => {
       alert('Enlace compartido copiado al portapapeles.');
     })
@@ -555,6 +623,9 @@ function handleAuthSubmit(event) {
     state.currentUser = username;
     saveCurrentUser(username);
     state.events = loadEvents();
+    if (state.events.length) {
+      setSelectedDateFromEvents(state.events);
+    }
     showAuthMessage(`Bienvenido ${username}.`, true);
   }
 
@@ -597,6 +668,7 @@ function logout() {
 }
 
 function bootstrap() {
+  loadSharedUsersIfNeeded();
   state.events = loadEvents();
   if (state.events.length) {
     const startingDate = getInitialEventDate(state.events);
