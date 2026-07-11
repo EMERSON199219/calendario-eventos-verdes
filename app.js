@@ -605,9 +605,21 @@ async function handleSubmit(event) {
 }
 
 function updateLogoImage() {
-  const logo = document.querySelector('.hero-logo');
-  if (logo) {
-    logo.src = `logo.jpeg?cb=${Date.now()}`;
+  const logos = document.querySelectorAll('.brand-block .hero-logo');
+  if (!logos.length) return;
+
+  const cacheBuster = Date.now();
+
+  if (logos[0]) {
+    logos[0].src = `logo.jpeg?cb=${cacheBuster}`;
+  }
+
+  if (logos[1]) {
+    logos[1].onerror = function onComboLogoError() {
+      this.onerror = null;
+      this.src = `logo.jpeg?cb=${cacheBuster}`;
+    };
+    logos[1].src = `logo-combo-transparent.png?cb=${cacheBuster}`;
   }
 }
 

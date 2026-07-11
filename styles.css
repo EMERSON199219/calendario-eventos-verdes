@@ -49,39 +49,51 @@ textarea {
 }
 
 .hero-content {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   flex: 1;
 }
 
 .auth-status {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: auto;
   z-index: 2;
 }
 
 .brand-block {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding-left: 220px;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 860px;
 }
 
 .hero-logo {
-  position: absolute;
-  top: 12px;
-  left: 24px;
-  width: 200px;
-  height: 200px;
-  z-index: 1;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
   object-fit: contain;
   border-radius: 0;
   background: transparent;
   padding: 0;
   box-shadow: none;
+}
+
+.hero-logo-combo {
+  mix-blend-mode: normal;
+  filter: none;
+  clip-path: polygon(50% 2%, 92% 19%, 92% 84%, 50% 98%, 8% 84%, 8% 19%);
+}
+
+.brand-copy {
+  text-align: center;
 }
 
 .eyebrow {
@@ -109,6 +121,42 @@ textarea {
   border-radius: 999px;
   font-weight: 700;
   backdrop-filter: blur(10px);
+}
+
+@media (max-width: 840px) {
+  .hero {
+    padding: 16px;
+  }
+
+  .hero-content {
+    align-items: flex-start;
+  }
+
+  .brand-block {
+    gap: 12px;
+  }
+
+  .hero-logo {
+    width: 84px;
+    height: 84px;
+  }
+
+  .brand-copy {
+    text-align: left;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-block {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .brand-copy {
+    text-align: center;
+  }
 }
 
 .layout {
