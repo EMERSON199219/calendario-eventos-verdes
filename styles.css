@@ -149,13 +149,38 @@ textarea {
 @media (max-width: 560px) {
   .brand-block {
     display: grid;
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
+    grid-template-columns: minmax(68px, 84px) 1fr minmax(62px, 78px);
+    align-items: center;
+    justify-items: stretch;
+    gap: 10px;
+    text-align: left;
   }
 
   .brand-copy {
-    text-align: center;
+    text-align: left;
+  }
+
+  .hero-logo {
+    width: 100%;
+    height: auto;
+    max-height: 86px;
+  }
+
+  .hero-logo-combo {
+    justify-self: end;
+    max-height: 88px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+  }
+
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(1.15rem, 6vw, 1.55rem);
+    line-height: 1.1;
   }
 }
 
@@ -382,6 +407,11 @@ textarea {
   color: white;
 }
 
+.form-actions .primary-action {
+  background: var(--green-500);
+  color: white;
+}
+
 .secondary {
   background: #ecf8ee;
   color: var(--green-800);
@@ -483,30 +513,37 @@ textarea {
   }
 
   .hero {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+    align-items: center;
+    gap: 10px;
     min-height: auto;
-    padding: 18px 16px;
+    padding: 14px 12px;
+    border-radius: 18px;
   }
 
   .hero-content {
-    flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 10px;
   }
 
   .brand-block {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-left: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
   }
 
   .hero-logo {
+    width: 74px;
+    height: 74px;
+  }
+
+  .brand-copy {
+    flex: 1;
+  }
+
+  .auth-status {
     position: static;
-    width: 72px;
-    height: 72px;
-    margin-bottom: 6px;
+    justify-content: flex-end;
+    width: 100%;
   }
 
   .calendar-header,

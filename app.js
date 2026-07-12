@@ -33,7 +33,6 @@ const commitmentInput = document.getElementById('commitment');
 const submitBtn = document.getElementById('submitBtn');
 const cancelEditBtn = document.getElementById('cancelEditBtn');
 const exportBtn = document.getElementById('exportBtn');
-const copyLinkBtn = document.getElementById('copyLinkBtn');
 const authCard = document.getElementById('authCard');
 const authForm = document.getElementById('authForm');
 const authUsernameInput = document.getElementById('authUsername');
@@ -405,6 +404,17 @@ function formatDate(date) {
   });
 }
 
+function formatTime12h(timeValue) {
+  if (!timeValue || !/^\d{2}:\d{2}$/.test(timeValue)) {
+    return 'Sin hora definida';
+  }
+
+  const [hoursRaw, minutes] = timeValue.split(':').map(Number);
+  const period = hoursRaw >= 12 ? 'PM' : 'AM';
+  const hours12 = hoursRaw % 12 || 12;
+  return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
 function render() {
   renderCalendar();
   renderSelectedDate();
@@ -481,17 +491,20 @@ function renderEvents() {
   eventList.innerHTML = '';
 
   selectedEvents.forEach((event) => {
+    const eventTime = formatTime12h(event.time);
     const card = document.createElement('article');
     card.className = 'event-card';
     card.innerHTML = `
       <div class="event-top">
         <div>
           <h4 class="event-title">${event.title}</h4>
-          <p class="event-meta">${event.time} · ${event.committee}</p>
+          <p class="event-meta"><strong>Hora:</strong> ${eventTime}</p>
         </div>
-        <span class="panel-pill">${event.responsible}</span>
+        <span class="panel-pill">${event.responsible || 'Sin responsable'}</span>
       </div>
       <p><strong>Lugar:</strong> ${event.location || 'Sin lugar definido'}</p>
+      <p><strong>Comité:</strong> ${event.committee || 'Sin comité definido'}</p>
+      <p><strong>Responsable:</strong> ${event.responsible || 'Sin responsable definido'}</p>
       <p>${event.description || 'Sin descripción'}</p>
       <p><strong>Compromiso:</strong> ${event.commitment || 'Sin compromiso definido'}</p>
       <div class="event-actions">
@@ -712,6 +725,7 @@ function updateAuthDisplay() {
   authCard.classList.toggle('hidden', isLoggedIn);
   appContent.classList.toggle('hidden', !isLoggedIn && !hasShared);
   authStatus.classList.toggle('hidden', !isLoggedIn);
+  logoutBtn.classList.toggle('hidden', !isLoggedIn);
 
   if (isLoggedIn) {
     userIndicator.textContent = `Sesión: ${state.currentUser}${isAdmin ? ' (Super admin)' : ''}`;
@@ -811,7 +825,6 @@ function bootstrap() {
   eventForm.addEventListener('submit', handleSubmit);
   cancelEditBtn.addEventListener('click', resetForm);
   exportBtn.addEventListener('click', downloadExcelReport);
-  copyLinkBtn.addEventListener('click', copySharedLink);
   document.getElementById('prevMonth').addEventListener('click', () => {
     state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() - 1, 1);
     render();
