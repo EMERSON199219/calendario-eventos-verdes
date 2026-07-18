@@ -13,7 +13,8 @@ const state = {
   editingEventId: null,
   currentUser: loadCurrentUser(),
   events: [],
-  firestoreUnsubscribe: null
+  firestoreUnsubscribe: null,
+  showCompletedEvents: false
 };
 
 const monthLabel = document.getElementById('monthLabel');
@@ -477,27 +478,80 @@ function renderSelectedDate() {
   selectedDateLabel.textContent = formatDate(state.selectedDate);
 }
 
+function markEventAsCompleted(id) {
+  const event = state.events.find((item) => item.id === id);
+  if (event) {
+    event.completed = !event.completed;
+    saveEvents();
+    
+    if (state.currentUser) {
+      syncEventsToFirestore(state.currentUser);
+    }
+    
+    render();
+  }
+}
+
+function deleteEventPermanently(id) {
+  state.events = state.events.filter((event) => event.id !== id);
+  saveEvents();
+  
+  if (state.currentUser) {
+    syncEventsToFirestore(state.currentUser);
+  }
+  
+  if (state.editingEventId === id) {
+    resetForm();
+  }
+  render();
+}
+
 function renderEvents() {
   const key = toDateKey(state.selectedDate);
-  const selectedEvents = state.events
+  let selectedEvents = state.events
     .filter((event) => event.date === key)
     .sort((a, b) => a.time.localeCompare(b.time));
+  
+  const completedEvents = selectedEvents.filter((e) => e.completed);
+  const pendingEvents = selectedEvents.filter((e) => !e.completed);
+  
+  const displayedEvents = state.showCompletedEvents ? selectedEvents : pendingEvents;
 
-  if (!selectedEvents.length) {
+  if (!displayedEvents.length && !completedEvents.length) {
     eventList.innerHTML = '<div class="empty-state">No hay eventos para este día. Crea uno desde el formulario.</div>';
+    return;
+  }
+
+  if (!displayedEvents.length && completedEvents.length) {
+    eventList.innerHTML = '<div class="empty-state">No hay eventos pendientes. <button class="toggle-completed" type="button" style="background:none;border:none;color:#16a34a;cursor:pointer;text-decoration:underline;">Ver eventos hechos</button></div>';
+    eventList.querySelector('.toggle-completed')?.addEventListener('click', () => {
+      state.showCompletedEvents = true;
+      render();
+    });
     return;
   }
 
   eventList.innerHTML = '';
 
-  selectedEvents.forEach((event) => {
+  if (completedEvents.length > 0 && displayedEvents.length > 0) {
+    const toggleContainer = document.createElement('div');
+    toggleContainer.style.cssText = 'padding: 10px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 10px;';
+    toggleContainer.innerHTML = `<button class="toggle-completed-visibility" type="button" style="background:none;border:none;color:#16a34a;cursor:pointer;text-decoration:underline;font-size:0.9em;">Ocultar eventos hechos (${completedEvents.length})</button>`;
+    eventList.appendChild(toggleContainer);
+    toggleContainer.querySelector('.toggle-completed-visibility').addEventListener('click', () => {
+      state.showCompletedEvents = false;
+      render();
+    });
+  }
+
+  displayedEvents.forEach((event) => {
     const eventTime = formatTime12h(event.time);
     const card = document.createElement('article');
-    card.className = 'event-card';
+    card.className = `event-card ${event.completed ? 'is-completed' : ''}`;
     card.innerHTML = `
       <div class="event-top">
         <div>
-          <h4 class="event-title">${event.title}</h4>
+          <h4 class="event-title" style="${event.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${event.title}</h4>
           <p class="event-meta"><strong>Hora:</strong> ${eventTime}</p>
         </div>
         <span class="panel-pill">${event.responsible || 'Sin responsable'}</span>
@@ -509,6 +563,7 @@ function renderEvents() {
       <p><strong>Compromiso:</strong> ${event.commitment || 'Sin compromiso definido'}</p>
       <div class="event-actions">
         <button class="edit" type="button" data-edit="${event.id}">Reprogramar</button>
+        <button class="complete" type="button" data-complete="${event.id}">${event.completed ? 'Desmarcar' : 'Marcar como hecho'}</button>
         <button class="delete" type="button" data-delete="${event.id}">Eliminar</button>
       </div>
     `;
@@ -520,8 +575,12 @@ function renderEvents() {
     button.addEventListener('click', () => startEdit(button.getAttribute('data-edit')));
   });
 
+  eventList.querySelectorAll('[data-complete]').forEach((button) => {
+    button.addEventListener('click', () => markEventAsCompleted(button.getAttribute('data-complete')));
+  });
+
   eventList.querySelectorAll('[data-delete]').forEach((button) => {
-    button.addEventListener('click', () => deleteEvent(button.getAttribute('data-delete')));
+    button.addEventListener('click', () => deleteEventPermanently(button.getAttribute('data-delete')));
   });
 }
 
@@ -563,20 +622,7 @@ function startEdit(id) {
   render();
 }
 
-function deleteEvent(id) {
-  state.events = state.events.filter((event) => event.id !== id);
-  saveEvents();
-  
-  // Sincronizar a Firestore si hay usuario logueado
-  if (state.currentUser) {
-    syncEventsToFirestore(state.currentUser);
-  }
-  
-  if (state.editingEventId === id) {
-    resetForm();
-  }
-  render();
-}
+
 
 async function handleSubmit(event) {
   event.preventDefault();

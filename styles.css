@@ -493,6 +493,17 @@ textarea {
   color: #ba3d2f;
 }
 
+.event-actions .complete {
+  background: #d7f8df;
+  color: #16a34a;
+}
+
+.event-card.is-completed {
+  opacity: 0.75;
+  background: linear-gradient(135deg, #f0fdf4, #e8fdf0);
+  border-color: #bbf7d0;
+}
+
 .empty-state {
   padding: 16px;
   border: 1px dashed #d5e8d8;
